@@ -163,6 +163,8 @@ unicode_to_UTF8:
 
     .1_BYTE:
         STUR X0, [X1]
+        ret
+
     .2_BYTES:
         MOVZ X2, #0XC0
         MOVZ X3, #0X80
@@ -172,21 +174,25 @@ unicode_to_UTF8:
         ORR X2, X2, X4
         ORR X3, X3, X5
         STUR X2, [X1]
-        STUR X3, [X1, #8]
+        STUR X3, [X1, #1]
+        ret
+
     .3_BYTES:
         MOVZ X2, #0XE0
         MOVZ X3, #0X80
         MOVZ X6, #0X80
 
         LSR X4, X0, #6
+        //ANDS X4, X4, #0X3F
         LSR X5, X4, #5
         LSR X7, X5, #5
         ORR X2, X2, X4
         ORR X3, X3, X5
         ORR X6, X6, X7
         STUR X2, [X1]
-        STUR X3, [X1, #8]
-        STUR X6, [X1, #16]
+        STUR X3, [X1, #1]
+        STUR X6, [X1, #2]
+        ret 
 
     .4_BYTES:
         MOVZ X2, #0XF0
@@ -203,18 +209,19 @@ unicode_to_UTF8:
         ORR X6, X6, X7
         ORR X8, X8, X9
         STUR X2, [X1]
-        STUR X3, [X1, #8]
-        STUR X6, [X1, #16]
-        STUR X8, [X1, #24]
+        STUR X3, [X1, #1]
+        STUR X6, [X1, #2]
+        STUR X8, [X1, #3]
+        ret 
 
     .OUT_OF_RANGE:
         MOVZ X2, 0XFF
 
         STUR X2, [X1]
-        STUR X2, [X1, #8]
-        STUR X2, [X1, #16]
-        STUR X2, [X1, #24]
-
+        STUR X2, [X1, #1]
+        STUR X2, [X1, #2]
+        STUR X2, [X1, #3]
+        ret 
     ret
     .size   unicode_to_UTF8, .-unicode_to_UTF8
     // ... and ends with the .size above this line.
@@ -232,11 +239,97 @@ UTF8_to_unicode:
     // Input parameter utf8 is passed in X0.
     // Output value is returned in X0.
 
+   
+    SUB X1, X1, X1 
+    LDUR X1, [X0]
+    LSR X1, X1, #7
+    CMP X1, #0
+    b.eq .1_BYTE
+
+    SUB X1, X1, X1
+    LDUR X1, [X0]
+    LSR X1, X1, #4
+    ANDS X1, X1, #0XF
+
+    CMP X1, #12
+    b.eq .2_BYTE 
+    CMP X1, #14
+    b.eq .3_BYTE
+    CMP X1, #15
+    b.eq .4_BYTE
+
+    .1_BYTE: 
+    SUB X1, X1, X1
+    LDUR X1, [X0]
+    ANDS X1, X1, #0X7F
+    SUB X0, X0, X0
+    ADD X0, X0, X1
+    ret
+
+    .2_BYTE:
+    SUB X2, X2, X2
+    SUB X1, X1, X1
+    SUB X3, X3, X3
+
+    LDUR X1, [X0]
+    LDUR X3, [X0, #1]
+
+    ANDS X3, X3, #0X3F
+    ADD X2, X2, X3
+
+    ANDS X1, X1, #0X1F
+    LSL X1, X1, #6 
+    ADD X0, X3, X1
+    
+
+    .3_BYTE:
+    SUB X2, X2, X2
+    SUB X1, X1, X1
+    SUB X3, X3, X3
+    SUB X4, X4, X4
+
+    LDUR X1, [X0]
+    LDUR X3, [X0, #1]
+    LDUR X4, [X0, #2]
+
+    ANDS X4, X4, #0X3F 
+    ADD X4, X4, X2
+
+    ANDS X3, X3, #0X3F
+    ADD X2, X2, X3
+
+    ANDS X1, X1, #0X1F
+    LSL X1, X1, #6 
+    ADD X0, X3, X1
+
+    .4_BYTE:
+    SUB X2, X2, X2
+    SUB X1, X1, X1
+    SUB X3, X3, X3
+    SUB X4, X4, X4
+    SUB X5, X5, X5
+
+    LDUR X1, [X0]
+    LDUR X3, [X0, #1]
+    LDUR X4, [X0, #2]
+    LDUR X5, [X0, #3]
+
+    ANDS X5, X5, #0X3F 
+    ADD X5, X5, X4
+
+    ANDS X4, X4, #0X3F 
+    ADD X4, X4, X2
+
+    ANDS X3, X3, #0X3F
+    ADD X2, X2, X3
+
+    ANDS X1, X1, #0X1F
+    LSL X1, X1, #6 
+    ADD X0, X3, X1
+
     ret
     .size   UTF8_to_unicode, .-UTF8_to_unicode
     // ... and ends with the .size above this line.
-
-
 
     // ***** WEEK 2 deliverables *****
 
