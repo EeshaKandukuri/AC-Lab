@@ -145,8 +145,6 @@ unicode_to_UTF8:
     // Input parameter a is passed in X0; input parameter utf8 is passed in X1.
     // There are no output values.
 
-    //using a in binary 
-
     CMP X0, #2097152
     b.ge .OUT_OF_RANGE
 
@@ -166,51 +164,45 @@ unicode_to_UTF8:
         ret
 
     .2_BYTES:
-        MOVZ X2, #0XC0
-        MOVZ X3, #0X80
 
-        LSL X4, X0, #6
-        LSL X5, X4, #5
-        ORR X2, X2, X4
-        ORR X3, X3, X5
-        STUR X2, [X1]
-        STUR X3, [X1, #1]
+        LSR X3, X0, #6
+        ORR X3, X3, #0XC0
+        STUR X3, [X1]
+
+        MOV X4, #1
+
         ret
 
     .3_BYTES:
-        MOVZ X2, #0XE0
-        MOVZ X3, #0X80
-        MOVZ X6, #0X80
 
-        LSL X4, X0, #6
-        LSL X5, X4, #5
-        LSL X7, X5, #5
-        ORR X2, X2, X4
-        ORR X3, X3, X5
-        ORR X6, X6, X7
-        STUR X2, [X1]
-        STUR X3, [X1, #1]
-        STUR X6, [X1, #2]
-        ret 
+        LSR X3, X0, #12
+        ORR X3, X3, #0XE0
+        STUR X3, [X1]
+
+        MOV X4, #2
+         
+        b .REPEAT_FILL
+
+    .REPEAT_FILL:
+        LSL X4, X4, #4
+        LSR X3, X0, X4
+        AND X3, X3, #0X3F
+        ORR X3, X3, #0X80
+        STUR X3, [X1]
+        
+        SUBS X4, X4, #1
+        b.gt .REPEAT_FILL
+
+        ret
 
     .4_BYTES:
-        MOVZ X2, #0XF0
-        MOVZ X3, #0X80
-        MOVZ X6, #0X80
-        MOVZ X8, #0X80
 
-        LSL X4, X0, #6
-        LSL X5, X4, #5
-        LSL X7, X5, #5
-        LSL X9, X7, #5
-        ORR X2, X2, X4
-        ORR X3, X3, X5
-        ORR X6, X6, X7
-        ORR X8, X8, X9
-        STUR X2, [X1]
-        STUR X3, [X1, #1]
-        STUR X6, [X1, #2]
-        STUR X8, [X1, #3]
+        LSR X3, X0, #18
+        ORR X3, X3, #0XF0
+
+        STUR X3, [X1]
+
+        MOV X4, #3
         ret 
 
     .OUT_OF_RANGE:
@@ -222,6 +214,8 @@ unicode_to_UTF8:
         STUR X2, [X1, #3]
         ret 
     ret
+
+
     .size   unicode_to_UTF8, .-unicode_to_UTF8
     // ... and ends with the .size above this line.
 
@@ -238,93 +232,77 @@ UTF8_to_unicode:
     // Input parameter utf8 is passed in X0.
     // Output value is returned in X0.
 
-   
-    SUB X1, X1, X1 
-    LDUR X1, [X0]
-    LSR X1, X1, #7
-    CMP X1, #0
-    b.eq .BYTE_1
+    LDUR X3, [X0, #0]
+    ANDS X3, X3, #0b11111111
+    ANDS X4, X3, #0b10000000
+    CMP X4, #0 
+    b.eq .1_B
 
-    SUB X1, X1, X1
-    LDUR X1, [X0]
-    LSR X1, X1, #4
-    ANDS X1, X1, #0XF
+    ANDS X4, X3, #0b11100000
+    CMP X2, #0b11000000
+    b.eq .2_B
 
-    CMP X1, #12
-    b.eq .BYTE_2 
-    CMP X1, #14
-    b.eq .BYTE_3
-    CMP X1, #15
-    b.eq .BYTE_4
+    ANDS X4, X3, #0b11110000
+    CMP X4, #0b11100000
+    b.eq .3_B
 
-    .BYTE_1: 
-    SUB X1, X1, X1
-    LDUR X1, [X0]
-    ANDS X1, X1, #0X7F
-    SUB X0, X0, X0
-    ADD X0, X0, X1
+    ANDS X4, X3, #0b11111000
+    CMP X4, #0b11110000
+    b.eq .4_B
+
+    .1_B:
+    ANDS X4, X3, #0b01111111
+    MOVZ X0, #0
+    ADD X0, X0, X4
     ret
 
-    .BYTE_2:
-    SUB X2, X2, X2
-    SUB X1, X1, X1
-    SUB X3, X3, X3
-
-    LDUR X1, [X0]
-    LDUR X3, [X0, #1]
-
-    ANDS X3, X3, #0X3F
-    ADD X2, X2, X3
-
-    ANDS X1, X1, #0X1F
-    LSL X1, X1, #6 
-    ADD X0, X3, X1
-    
-
-    .BYTE_3:
-    SUB X2, X2, X2
-    SUB X1, X1, X1
-    SUB X3, X3, X3
-    SUB X4, X4, X4
-
-    LDUR X1, [X0]
-    LDUR X3, [X0, #1]
-    LDUR X4, [X0, #2]
-
-    ANDS X4, X4, #0X3F 
-    ADD X4, X4, X2
-
-    ANDS X3, X3, #0X3F
-    ADD X2, X2, X3
-
-    ANDS X1, X1, #0X1F
-    LSL X1, X1, #6 
-    ADD X0, X3, X1
-
-    .BYTE_4:
-    SUB X2, X2, X2
-    SUB X1, X1, X1
-    SUB X3, X3, X3
-    SUB X4, X4, X4
-    SUB X5, X5, X5
-
-    LDUR X1, [X0]
-    LDUR X3, [X0, #1]
-    LDUR X4, [X0, #2]
-    LDUR X5, [X0, #3]
-
-    ANDS X5, X5, #0X3F 
+    .2_B:
+    ANDS X4, X3, #0b00011111
+    MOVZ X5, #0
     ADD X5, X5, X4
+    LSL X5, X5, #6
+    LDUR X4, [X1, #1]
+    ANDS X4, X4, #0x3F
+    ADD X5, X5, X4
+    MOVZ X0, #0
+    ADD X0, X0, X5
+    ret
 
-    ANDS X4, X4, #0X3F 
-    ADD X4, X4, X2
+    .3_B:
+    ANDS X4, X3, #0b00001111
+    MOVZ X5, #0
+    ADD X5, X5, X4
+    LSL X5, X5, #12
+    LDUR X4, [X0, #1]
+    ANDS X4, X4, #0x3F
+    LSL X4, X4, #6
+    ADD X5, X5, X4
+    LDUR X4, [X0, #2]
+    ANDS X4, X4, #0x3F
+    ADD X5, X5, X4
+    MOVZ X0, #0
+    ADD X0, X0, X5
+    ret
 
-    ANDS X3, X3, #0X3F
-    ADD X2, X2, X3
-
-    ANDS X1, X1, #0X1F
-    LSL X1, X1, #6 
-    ADD X0, X3, X1
+    .4_B:
+    ANDS X4, X3, #0b00000111
+    MOVZ X5, #0
+    ADD X5, X5, X4
+    LSL X5, X5, #18
+    LDUR X4, [X0, #1]
+    ANDS X4, X4, #0x3F
+    LSL X4, X4, #12
+    ADD X5, X5, X4
+    LDUR X4, [X0, #2]
+    ANDS X4, X4, #0x3F
+    LSL X4, X4, #6
+    ADD X5, X5, X4
+    LDUR X4, [X0, #3]
+    ANDS X4, X4, #0x3F
+    ADD X5, X5, X4
+    MOVZ X0, #0
+    ADD X0, X0, X5
+    ret
 
     ret
     .size   UTF8_to_unicode, .-UTF8_to_unicode
