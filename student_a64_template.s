@@ -169,8 +169,8 @@ unicode_to_UTF8:
         MOVZ X2, #0XC0
         MOVZ X3, #0X80
 
-        LSR X4, X0, #6
-        LSR X5, X4, #5
+        LSL X4, X0, #6
+        LSL X5, X4, #5
         ORR X2, X2, X4
         ORR X3, X3, X5
         STUR X2, [X1]
@@ -182,10 +182,9 @@ unicode_to_UTF8:
         MOVZ X3, #0X80
         MOVZ X6, #0X80
 
-        LSR X4, X0, #6
-        //ANDS X4, X4, #0X3F
-        LSR X5, X4, #5
-        LSR X7, X5, #5
+        LSL X4, X0, #6
+        LSL X5, X4, #5
+        LSL X7, X5, #5
         ORR X2, X2, X4
         ORR X3, X3, X5
         ORR X6, X6, X7
@@ -200,10 +199,10 @@ unicode_to_UTF8:
         MOVZ X6, #0X80
         MOVZ X8, #0X80
 
-        LSR X4, X0, #6
-        LSR X5, X4, #5
-        LSR X7, X5, #5
-        LSR X9, X7, #5
+        LSL X4, X0, #6
+        LSL X5, X4, #5
+        LSL X7, X5, #5
+        LSL X9, X7, #5
         ORR X2, X2, X4
         ORR X3, X3, X5
         ORR X6, X6, X7
@@ -244,7 +243,7 @@ UTF8_to_unicode:
     LDUR X1, [X0]
     LSR X1, X1, #7
     CMP X1, #0
-    b.eq .1_BYTE
+    b.eq .BYTE_1
 
     SUB X1, X1, X1
     LDUR X1, [X0]
@@ -252,13 +251,13 @@ UTF8_to_unicode:
     ANDS X1, X1, #0XF
 
     CMP X1, #12
-    b.eq .2_BYTE 
+    b.eq .BYTE_2 
     CMP X1, #14
-    b.eq .3_BYTE
+    b.eq .BYTE_3
     CMP X1, #15
-    b.eq .4_BYTE
+    b.eq .BYTE_4
 
-    .1_BYTE: 
+    .BYTE_1: 
     SUB X1, X1, X1
     LDUR X1, [X0]
     ANDS X1, X1, #0X7F
@@ -266,7 +265,7 @@ UTF8_to_unicode:
     ADD X0, X0, X1
     ret
 
-    .2_BYTE:
+    .BYTE_2:
     SUB X2, X2, X2
     SUB X1, X1, X1
     SUB X3, X3, X3
@@ -282,7 +281,7 @@ UTF8_to_unicode:
     ADD X0, X3, X1
     
 
-    .3_BYTE:
+    .BYTE_3:
     SUB X2, X2, X2
     SUB X1, X1, X1
     SUB X3, X3, X3
@@ -302,7 +301,7 @@ UTF8_to_unicode:
     LSL X1, X1, #6 
     ADD X0, X3, X1
 
-    .4_BYTE:
+    .BYTE_4:
     SUB X2, X2, X2
     SUB X1, X1, X1
     SUB X3, X3, X3
