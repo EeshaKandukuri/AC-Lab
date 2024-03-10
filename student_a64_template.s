@@ -164,57 +164,95 @@ unicode_to_UTF8:
         ret
 
     .2_BYTES:
+        SUBS X2, X2, X2
+        SUBS X4, X4, X4
+
+        ADD X2, X2, #0xC0
+        ADD X4, X4, #0x80
 
         LSR X3, X0, #6
-        ORR X3, X3, #0XC0
-        STUR X3, [X1]
+        ANDS X3, X3, #0x1F
+        LSR X5, X0, #0
+        ANDS X5, X5, #0x3F
 
-        MOV X4, #1
-
+        ADD X2, X2, X3
+        ADD X4, X4, X5
+    
+        ORR X2, X2, #0xC0
+        ORR X3, X3, #0x80
+        STUR X2, [X1]
+        STUR X3, [X1, #1]
         ret
 
     .3_BYTES:
 
+        SUBS X2, X2, X2
+        SUBS X4, X4, X4
+        SUBS X6, X6, X6
+
+        ADD X2, X2, #0xE0
+        ADD X4, X4, #0x80
+        ADD X6, X6, #0x80
+
         LSR X3, X0, #12
-        ORR X3, X3, #0XE0
-        STUR X3, [X1]
+        ANDS X3, X3, #0x0F
+        LSR X5, X0, #6
+        ANDS X5, X5, #0x3F
+        LSR X7, X0, #0
+        ANDS X7, X7, #0x3F
 
-        MOV X4, #2
-         
-        b .REPEAT_FILL
+        ADD X2, X2, X3
+        ADD X4, X4, X5
+        ADD X6, X6, X7
 
-    .REPEAT_FILL:
-        LSL X4, X4, #4
-        LSR X3, X0, X4
-        AND X3, X3, #0X3F
-        ORR X3, X3, #0X80
-        STUR X3, [X1]
-        
-        SUBS X4, X4, #1
-        b.gt .REPEAT_FILL
-
-        ret
+        STUR X2, [X1]
+        STUR X4, [X1, #1]
+        STUR X6, [X1, #2]
+        ret 
 
     .4_BYTES:
 
+        SUBS X2, X2, X2
+        SUBS X4, X4, X4
+        SUBS X6, X6, X6
+        SUBS X8, X8, X8
+
+        ADD X2, X2, #0xF0
+        ADD X4, X4, #0x80
+        ADD X6, X6, #0x80
+        ADD X8, X8, #0X80
+
         LSR X3, X0, #18
-        ORR X3, X3, #0XF0
+        ANDS X3, X3, #0x07
+        LSR X5, X0, #12
+        ANDS X5, X5, #0x3F
+        LSR X7, X0, #6
+        ANDS X7, X7, #0x3F
+        LSR X9, X0, #0
+        ANDS X9, X9, #0x3F
 
-        STUR X3, [X1]
+        ADD X2, X2, X3
+        ADD X4, X4, X5
+        ADD X6, X6, X7
+        ADD X8, X8, X9
 
-        MOV X4, #3
+        STUR X2, [X1]
+        STUR X4, [X1, #1]
+        STUR X6, [X1, #2]
+        STUR X8, [X1, #3]
         ret 
 
     .OUT_OF_RANGE:
+        
+        SUBS X2, X2, X2
         MOVZ X2, 0XFF
-
+    
         STUR X2, [X1]
         STUR X2, [X1, #1]
         STUR X2, [X1, #2]
         STUR X2, [X1, #3]
         ret 
     ret
-
 
     .size   unicode_to_UTF8, .-unicode_to_UTF8
     // ... and ends with the .size above this line.
