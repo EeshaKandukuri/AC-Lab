@@ -590,19 +590,6 @@ tree_traversal:
     .size   tree_traversal, .-tree_traversal
     // ... and ends with the .size above this line.
 
-    // Every function starts from the .align below this line ...
-    .align  2
-    .p2align 3,,7
-    .global collatz_helper
-    .type   collatz_helper, %function
-
-collatz_helper:
-    // Input parameter n is passed in X0
-    // Output value is returned in X0.
-
-
-    .size   collatz_helper, .-collatz_helper
-    // ... and ends with the .size above this line.
 
     // Every function starts from the .align below this line ...
     .align  2
