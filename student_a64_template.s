@@ -609,7 +609,8 @@ collatz_TST:
 
 
         //check odd/even
-        MOVZ X4, X0
+        SUBS X4, X4, X4
+        ADDS X4, X4, X0
         
         SUB SP, SP, #16
         STUR X30, [SP]
@@ -632,7 +633,8 @@ collatz_TST:
             ADDS X4, X4, X5
             ADDS X4, X4, #1
 
-            MOVZ X0, X4
+            SUBS X0, X0, X0
+            ADDS X0, X0, X4
 
             b .do_while_loop
         
@@ -640,7 +642,9 @@ collatz_TST:
             ADDS X1, X1, #1
 
             LSR X4, X4, #1
-            MOVZ X0, X4
+            
+            SUBS X0, X0, X0
+            ADDS X0, X0, X4
 
             b .do_while_loop
 
