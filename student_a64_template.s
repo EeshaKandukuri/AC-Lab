@@ -357,14 +357,124 @@ UTF8_to_unicode:
     .type   ustrncmp, %function
 
 ustrncmp:
+
     // (STUDENT TODO) Code for ustrncmp goes here.
     // Input parameter str1 is passed in X0; input parameter str2 is passed in X1;
     //  input parameter num is passed in X2
     // Output value is returned in X0.
+
+
+    .loop:
+
+        CMP X2, #0
+        b.eq .exit
+
+        LDUR X4, [X0]
+        ANDS X4, X4, #0XFF
+        LDUR X5, [X1]
+        ANDS X5, X5, #0XFF
+        
+        //check for null terminator 
+        CMP X4, #0
+        b.eq .nullterm
+        CMP X5, #0
+        b.eq .nullterm
+
+        CMP X4, X5
+        b.eq .continue
+        b.gt .greater
+        b.lt .less
+
+    .continue:
+        ADDS X0, X0, #1
+        ADDS X1, X1, #1
+        SUBS X2, X2, #1
+
+        CMP X2, #0
+        b.gt .loop
+        b.eq .exit
+
+    .nullterm:
+        SUBS X0, X0, X0
+        ADDS X0, X0, #100
+        ret
+
+    .greater:
+        SUBS X0, X0, X0 
+        ADDS X0, X0, #1
+        ret
+
+    .less:
+        SUBS X0, X0, X0 
+        SUBS X0, X0, #1
+        ret
+
+    .exit:
+        SUBS X0, X0, X0
+        ADDS X0, X0, #2
+        ret
+
+
+
     ret
 
     .size   ustrncmp, .-ustrncmp
     // ... and ends with the .size above this line.
+
+
+.align  2
+    .p2align 3,,7
+    .global gcd_helper
+    .type   gcd_helper, %function
+
+
+gcd_helper:
+
+    CMP X0, X1
+    b.ge .swap
+
+    SUBS X2, X2, X2
+    ADDS X2, X2, X0
+    ADDS X0, X1, #0
+    ADDS X1, X2, #0
+
+
+    .swap:
+
+        CMP X0, #0
+        b.eq .base0
+        CMP X1, #0
+        b.eq .base1
+        CMP X0, X1
+        b.eq .base0
+
+        //algorithm
+        SUBS X3, X3, X3
+        ADDS X3, X3, X1
+        SUBS X1, X0, X1
+        SUBS X0, X0, X0
+        ADDS X0, X0, X3
+
+        SUB SP, SP, #16
+        STUR X30, [SP]
+
+        bl gcd_helper
+
+        LDUR X30, [SP]
+        ADD SP, SP, #16
+
+    .base0:
+        SUBS X0, X0, X0
+        ADDS X0, X0, X1
+        ret
+    .base1:
+        SUBS X1, X1, X1
+        ADDS X1, X1, X0
+        ret
+
+    ret
+
+     .size   gcd_helper, .-gcd_helper
 
 
 
@@ -374,15 +484,46 @@ ustrncmp:
     .global gcd_rec
     .type   gcd_rec, %function
 
+
 gcd_rec:
     // (STUDENT TODO) Code for gcd_rec goes here.
     // Input parameter a is passed in X0; input parameter b is passed in X1.
     // Output value is returned in X0.
+
+    CMP X0, #0
+    b.eq .earlyret
+    CMP X1, #0
+    b.eq .earlyret
+
+    //check if swap needed
+    CMP X0, X1
+    
+    b.ge .swap1
+
+    SUBS X2, X2, X2
+    ADDS X2, X2, X0
+    ADDS X0, X1, #0
+    ADDS X1, X2, #0
+   
+    .swap1:
+        SUB SP, SP, #16
+        STUR X30, [SP]
+
+        bl gcd_helper
+
+        
+        LDUR X30, [SP]
+        ADD SP, SP, #16
+
     ret
 
-    .size   gcd_rec, .-gcd_rec
-    // ... and ends with the .size above this line.
+    .earlyret:
+        SUBS X0, X0, X0
+        SUBS X0, X0, #1
+        ret
 
+    .size   gcd_rec, .-gcd_rec
+    // ... and ends with the .size above this line. ko9\
 
 
     // Every function starts from the .align below this line ...
@@ -396,12 +537,72 @@ tree_traversal:
     // Input parameter root is passed in X0; input parameter bit_string is passed in X1;
     //  input parameter bit_string_length is passed in X2
     // Output value is returned in X0.
+
+    SUBS X3, X3, X3
+
+    CMP X2, #0
+    b.eq .zeroret
+
+    .while_loop:
+        CMP X3, X2
+        b.eq .ret
+
+        LSR X4, X1, X3
+        ANDS X4, X4, #0x01
+        CMP X4, #0
+        b.eq .left
+        b.gt .right 
+
+        .left:
+            LDUR X0, [X0]
+            CMP X0, #0
+            b.eq .zeroret
+            
+            ADDS X3, X3, #1
+            CMP X2, X3
+            b.eq .ret
+
+            b .while_loop
+        .right:
+            LDUR X0, [X0, #8]
+            CMP X0, #0
+            b.eq .zeroret
+
+            ADDS X3, X3, #1
+            CMP X2, X3
+            b.eq .ret
+
+            b .while_loop
+    
+    .ret:
+        LDUR X0, [X0, #16]
+        ret
+
+    .zeroret:
+        SUBS X0, X0, X0 
+        SUBS X0, X0, #1
+        ret
+
+
+
     ret
 
     .size   tree_traversal, .-tree_traversal
     // ... and ends with the .size above this line.
 
+    // Every function starts from the .align below this line ...
+    .align  2
+    .p2align 3,,7
+    .global collatz_helper
+    .type   collatz_helper, %function
 
+collatz_helper:
+    // Input parameter n is passed in X0
+    // Output value is returned in X0.
+
+
+    .size   collatz_helper, .-collatz_helper
+    // ... and ends with the .size above this line.
 
     // Every function starts from the .align below this line ...
     .align  2
@@ -412,11 +613,62 @@ tree_traversal:
 collatz_TST:
     // Input parameter n is passed in X0
     // Output value is returned in X0.
-    ret
 
+    SUBS X1, X1, X1
+
+    .do_while_loop:
+        CMP X0, #1
+        b.eq .basecase
+
+
+        //check odd/even
+        MOVZ X4, X0
+        
+        SUB SP, SP, #16
+        STUR X30, [SP]
+        STUR X1, [SP, #8]
+
+        bl ntz
+                
+        LDUR X30, [SP]
+        LDUR X1, [SP, #8]
+        ADD SP, SP, #16
+
+        CMP X0, #0
+        b.eq .odd
+        b.ne .even
+
+        .odd: 
+            ADDS X1, X1, #1
+
+            LSL X5, X4, #1
+            ADDS X4, X4, X5
+            ADDS X4, X4, #1
+
+            MOVZ X0, X4
+
+            b .do_while_loop
+        
+        .even:
+            ADDS X1, X1, #1
+
+            LSR X4, X4, #1
+            MOVZ X0, X4
+
+            b .do_while_loop
+
+        ret
+
+    
+    .basecase: 
+        SUBS X0, X0, X0
+        ADDS X0, X0, X1
+        ret
+
+    ret
+ 
     .size   collatz_TST, .-collatz_TST
     // ... and ends with the .size above this line.
-
 
 
     .section    .rodata
@@ -424,4 +676,5 @@ collatz_TST:
     // (STUDENT TODO) Any read-only global variables go here.
     .data
     // (STUDENT TODO) Any modifiable global variables go here.
+
     .align  3
